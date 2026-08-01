@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "발음 연습",
+    "slug": "pronunciation-practice",
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "발음 연습을 녹음하기 위해 마이크 권한이 필요합니다."
+        }
+      ]
+    ],
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": { "resizeMode": "contain", "backgroundColor": "#F8F9FF" }
+  }
+}
