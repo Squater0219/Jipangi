@@ -2,11 +2,14 @@
 
 이 문서는 팀장 전달 명세를 백엔드 구현 기준에 맞게 정리한 확정 API 명세이다. 별도의 변경 합의가 없는 한 이 문서를 기준으로 Django 서버와 클라이언트를 구현한다.
 
-문서 상태: API 계약 및 엔드포인트 구현 완료, 실제 음성 분석 모듈 연동 전
+문서 상태: 기존 API 엔드포인트 구현 완료, AI 교정 피드백 생성 API는 명세만
+확정하고 구현 전
 
 현재 개발 환경의 분석 어댑터는 프론트엔드 연동 테스트를 위한 임시 구현이다. 업로드된 음성을 실제로 판정하지 않고 목표 IPA를 인식 IPA로 반환하므로 점수는 항상 100점이다. 실제 분석 모듈이 준비되면 `PRONUNCIATION_ANALYZER_BACKEND` 환경 변수만 실제 함수 경로로 변경한다.
 
-프론트엔드 코드 생성이나 API 도구 가져오기가 필요한 경우 같은 디렉터리의 `openapi.yaml`을 사용한다.
+프론트엔드 코드 생성이나 API 도구 가져오기가 필요한 경우 같은 디렉터리의
+`openapi.yaml`을 사용한다. 단, AI 교정 피드백 생성 API는 아직 이 Markdown
+명세에만 반영되어 있으므로 구현 시 OpenAPI 문서도 함께 갱신해야 한다.
 
 ## 공통 규칙
 
@@ -379,6 +382,7 @@ consent_to_store: true
   "target_ipa": ["a", "n", "n", "j", "ʌ", "ŋ"],
   "recognized_ipa": ["a", "n", "j", "ʌ", "ŋ"],
   "score": 82.5,
+  "feedback_status": "completed",
   "errors": [
     {
       "sequence": 1,
@@ -406,6 +410,8 @@ consent_to_store: true
 - IPA는 배열 형식으로 반환한다.
 - `operation` 값은 `substitution`, `deletion`, `insertion`, `weakening` 중 하나이다. `weakening`은 정렬상 substitution으로 점수를 계산하되 오류 유형은 약화로 표시한다.
 - 점수는 확정된 Levenshtein distance 계산식으로 산출하고 소수점 한 자리로 반환한다.
+- `feedback_status`는 `not_requested`, `pending`, `completed`, `failed` 중 하나이다.
+- AI 피드백을 아직 생성하지 않았거나 생성에 실패한 경우 `feedback`은 `null`이다.
 - 분석이 아직 완료되지 않은 경우 `409 ANALYSIS_IN_PROGRESS`를 반환한다.
 - 분석이 실패한 경우 `409 ANALYSIS_FAILED`를 반환한다.
 - 저장에 동의하지 않은 분석 결과는 완료 후 30분 동안만 조회할 수 있다.
@@ -433,7 +439,93 @@ consent_to_store: true
 
 변경점: 저장된 분석 결과를 사용자가 직접 삭제할 수 있도록 삭제 API를 추가했다.
 
-## 11. 학습 기록 목록 조회
+## 11. AI 교정 피드백 생성
+
+`POST /api/v1/analyses/{analysis_id}/feedback`
+
+인증이 필요하며 요청 본문은 사용하지 않는다. 프론트엔드는 외부 AI 서비스가
+아니라 이 API만 호출하고, AI 서비스 키와 모델 설정은 백엔드에서 관리한다.
+
+최초 요청 응답:
+
+```json
+{
+  "analysis_id": "9f6d6c5e-33c4-4c83-989d-67b828ca4f6f",
+  "feedback_status": "pending",
+  "result_url": "/api/v1/analyses/9f6d6c5e-33c4-4c83-989d-67b828ca4f6f"
+}
+```
+
+- 피드백 생성 작업을 정상적으로 등록하면 HTTP `202 Accepted`를 반환한다.
+- 같은 분석에 대한 작업이 이미 진행 중이면 새 AI 요청을 만들지 않고 동일한
+  `202 Accepted` 응답을 반환한다.
+
+이미 생성된 경우 응답:
+
+```json
+{
+  "analysis_id": "9f6d6c5e-33c4-4c83-989d-67b828ca4f6f",
+  "feedback_status": "completed",
+  "feedback": {
+    "summary": "받침 발음에서 누락이 발생했습니다.",
+    "content": "받침을 끝까지 발음하는 연습이 필요합니다.",
+    "priority_items": ["받침"]
+  }
+}
+```
+
+- 이미 검증된 피드백이 있으면 AI를 다시 호출하지 않고 HTTP `200 OK`와 기존
+  결과를 반환한다.
+
+피드백 결과 확인:
+
+- 별도의 피드백 상태 조회 API는 만들지 않는다.
+- 응답의 `result_url`, 즉 `GET /api/v1/analyses/{analysis_id}`를 2초 간격으로
+  조회한다.
+- `feedback_status`가 `completed` 또는 `failed`가 되면 polling을 중단한다.
+- `failed`가 된 뒤 같은 `POST` 요청을 보내면 생성을 다시 시도할 수 있다.
+
+AI 입력 범위:
+
+- 연습 문장, 목표 IPA, 인식 IPA, 점수, 탐지된 발음 오류만 AI에 전달한다.
+- 사용자 이메일, 사용자 이름, JWT, 음성 원본과 내부 DB 식별자는 전달하지 않는다.
+- 프론트엔드에서 임의 프롬프트나 자유 입력 문장을 받지 않는다.
+- AI 피드백은 설명과 연습 방법만 생성하며, 분석 점수와 오류 판정 결과를
+  수정하지 않는다.
+
+백엔드 처리 기준:
+
+- 분석 상태가 `completed`인 본인 분석에 대해서만 요청할 수 있다.
+- 피드백 생성은 Celery 비동기 작업으로 처리하며 API 요청에서 AI 응답을 직접
+  기다리지 않는다.
+- 분석별 피드백은 하나만 저장하고, 동시에 여러 요청이 와도 AI 호출은 한 번만
+  수행한다.
+- AI 응답은 `summary`, `content`, `priority_items` 구조로 파싱하고 필수 필드,
+  자료형과 최대 길이를 검증한다. `summary`는 500자 이하, `content`는 2,000자
+  이하, `priority_items`는 최대 3개이며 각 항목은 50자 이하 문자열로 제한한다.
+- 검증을 통과한 응답만 저장하며 `is_validated=true`로 기록한다.
+- AI 제공자에 대한 단일 요청 제한 시간은 30초로 한다.
+- AI 제공자 오류나 응답 형식 오류는 최대 2회까지 재시도한다. 모두 실패하면
+  `feedback_status=failed`로 처리하되 기존 분석 결과는 그대로 조회할 수 있다.
+- 사용자별 요청은 1분에 5회, 분석별 생성 시도는 최초 요청을 포함해 최대
+  3회로 제한한다.
+- `consent_to_store=false`인 분석의 피드백은 해당 분석의 30분 보관 기간을
+  그대로 따르며 별도로 장기 저장하지 않는다.
+- 서버 로그에는 AI 서비스 키, 전체 프롬프트와 사용자 식별 정보를 남기지 않는다.
+
+오류 처리:
+
+- 분석이 진행 중이면 `409 ANALYSIS_IN_PROGRESS`를 반환한다.
+- 분석이 실패한 상태이면 `409 ANALYSIS_FAILED`를 반환한다.
+- 존재하지 않거나 다른 사용자의 분석이면 `404 ANALYSIS_NOT_FOUND`를 반환한다.
+- 분석별 최대 생성 횟수를 초과하면 `429 FEEDBACK_RETRY_LIMIT_EXCEEDED`를
+  반환한다.
+- 피드백 작업을 등록할 수 없으면 `503 FEEDBACK_QUEUE_UNAVAILABLE`을 반환한다.
+
+변경점: 분석 결과에 포함될 AI 교정 설명을 백엔드에서 안전하게 생성할 수 있도록
+비동기 피드백 생성 API와 중복 호출, 재시도, 개인정보 전달 범위를 새로 확정했다.
+
+## 12. 학습 기록 목록 조회
 
 `GET /api/v1/records`
 
@@ -480,7 +572,7 @@ consent_to_store: true
 
 변경점: 기존 명세의 기록 목록은 유지하되, 저장 동의와 완료 상태 조건을 명확히 추가했다.
 
-## 12. 학습 기록 상세 조회
+## 13. 학습 기록 상세 조회
 
 별도 API로 구현하지 않는다.
 
@@ -494,7 +586,7 @@ consent_to_store: true
 
 변경점: 기존 명세에는 기록 상세 API가 따로 있었지만 분석 결과 조회와 거의 같아서 중복 API를 제거했다.
 
-## 13. 통계 요약 조회
+## 14. 통계 요약 조회
 
 `GET /api/v1/statistics/summary`
 
@@ -535,7 +627,7 @@ consent_to_store: true
 
 변경점: 기존 명세의 통계 API에 저장 동의 조건과 계산 기준을 추가했다.
 
-## 14. 내 정보 조회
+## 15. 내 정보 조회
 
 `GET /api/v1/users/me`
 
@@ -560,7 +652,7 @@ consent_to_store: true
 
 변경점: 기존 명세의 사용자 정보 조회는 유지하되, JWT 인증 기준으로 동작하도록 명확히 했다.
 
-## 15. 공통 에러 코드
+## 16. 공통 에러 코드
 
 | HTTP Status | Code | 설명 |
 |---|---|---|
@@ -583,7 +675,9 @@ consent_to_store: true
 | 409 | `ANALYSIS_IN_PROGRESS` | 분석 진행 중 |
 | 409 | `ANALYSIS_FAILED` | 분석 실패 |
 | 429 | `TOO_MANY_REQUESTS` | 요청 횟수 초과 |
+| 429 | `FEEDBACK_RETRY_LIMIT_EXCEEDED` | 분석별 AI 피드백 생성 횟수 초과 |
 | 503 | `ANALYSIS_QUEUE_UNAVAILABLE` | 분석 작업 큐 연결 실패 |
+| 503 | `FEEDBACK_QUEUE_UNAVAILABLE` | AI 피드백 작업 등록 실패 |
 | 500 | `INTERNAL_SERVER_ERROR` | 서버 내부 오류 |
 
 구현 기준:
@@ -600,7 +694,9 @@ consent_to_store: true
 3. 사용자가 문장을 선택하고 음성을 업로드한다.
 4. 분석 ID를 받은 뒤 상태 조회 API를 polling한다.
 5. 상태가 `completed`가 되면 분석 결과를 조회한다.
-6. 사용자는 기록 목록, 분석 결과, 통계 요약을 확인한다.
+6. AI 교정 설명이 필요하면 피드백 생성 API를 한 번 호출한다.
+7. 분석 결과 조회 API에서 `feedback_status`가 `completed`가 될 때까지 polling한다.
+8. 사용자는 기록 목록, 분석 결과, 통계 요약을 확인한다.
 
 ## 프론트엔드 연동 참고
 
@@ -610,6 +706,8 @@ consent_to_store: true
 - 여러 요청이 동시에 `401`을 받아도 토큰 갱신 요청은 한 번만 보내고, 나머지 요청은 갱신 결과를 기다렸다가 재시도한다.
 - Access Token과 Refresh Token을 화면, 로그, 오류 수집 도구에 출력하지 않는다.
 - 분석 상태는 2초 간격으로 조회하고 `completed` 또는 `failed`가 되면 polling을 중단한다. 120초가 지나도 완료되지 않으면 사용자에게 지연 상태를 안내하되 서버의 분석 작업을 임의로 실패 처리하지 않는다.
+- AI 피드백 생성 요청은 분석 상태가 `completed`가 된 뒤 한 번만 전송한다. `feedback_status=pending`이면 결과 조회 API를 2초 간격으로 확인하고 중복 생성 요청을 보내지 않는다.
+- `feedback_status=failed`여도 점수와 오류 목록은 정상 결과로 표시하며, 사용자가 다시 시도할 때만 피드백 생성 API를 재호출한다.
 - `consent_to_store=false`인 결과는 완료 후 30분 동안만 조회할 수 있다. 해당 결과에는 만료 안내를 표시하고 기록 및 통계 화면에 노출하지 않는다.
 - 날짜는 UTC ISO 8601 형식으로 전달되므로 화면에서는 사용자 기기의 현지 시간으로 변환한다.
 - `next`와 `previous`는 Base URL 뒤에 붙여 호출할 수 있는 상대 경로로 전달한다.
@@ -633,4 +731,5 @@ consent_to_store: true
 - [x] 음성 파일 형식·크기·길이 검사와 분석 요청 API 구현
 - [x] 분석 상태, 결과 조회 및 삭제 API 구현
 - [x] 기록 및 통계 API 구현
-- [ ] 실제 음성 분석 및 LLM 피드백 모듈 연결
+- [ ] 실제 음성 분석 모듈 연결
+- [ ] AI 교정 피드백 생성 API 및 LLM 모듈 연결
