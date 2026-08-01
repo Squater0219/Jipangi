@@ -14,3 +14,6 @@ npm run web
 - 웹 및 iOS Simulator: `http://127.0.0.1:8000/api/v1`
 - Android Emulator: `http://10.0.2.2:8000/api/v1`
 - 실제 휴대전화: `http://개발-PC의-LAN-IP:8000/api/v1`
+
+JWT 처리, 화면별 API, 음성 업로드 및 분석 polling은
+[API_INTEGRATION.md](API_INTEGRATION.md)를 참고합니다.
