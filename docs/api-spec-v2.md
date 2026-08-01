@@ -326,7 +326,8 @@ consent_to_store: true
 
 - 성공 시 HTTP `202 Accepted`를 반환한다.
 - 사용자는 JWT에서 식별한다.
-- 지원 파일 형식은 `wav`, `m4a`, `aac`로 제한한다.
+- 지원 파일 형식은 `wav`, `m4a`, `aac`, `webm`으로 제한한다. `webm`은 Expo
+  웹 녹음 결과를 지원하기 위한 형식이다.
 - 파일 크기는 20MB 이하로 제한한다.
 - 음성 길이는 30초 이하로 제한한다.
 - 확장자만 확인하지 않고 실제 MIME 타입과 파일 내용을 검사한다.
@@ -392,7 +393,12 @@ consent_to_store: true
       "target_phone": "n",
       "recognized_phone": null,
       "operation": "deletion",
-      "confidence": 0.91
+      "confidence": 0.91,
+      "specific_feedback": {
+        "summary": "받침 /n/이 누락되었습니다.",
+        "content": "혀끝을 윗잇몸에 붙인 상태로 소리를 마무리해 보세요.",
+        "practice_tip": "안, 언, 인을 천천히 반복해 보세요."
+      }
     }
   ],
   "feedback": {
@@ -409,6 +415,7 @@ consent_to_store: true
 - 분석 ID는 UUID 문자열이다.
 - IPA는 배열 형식으로 반환한다.
 - `operation` 값은 `substitution`, `deletion`, `insertion`, `weakening` 중 하나이다. `weakening`은 정렬상 substitution으로 점수를 계산하되 오류 유형은 약화로 표시한다.
+- `specific_feedback`은 오류별 AI 교정 내용이며 `summary`, `content`, `practice_tip`을 담는다. 피드백을 생성하기 전에는 빈 객체 `{}`이다.
 - 점수는 확정된 Levenshtein distance 계산식으로 산출하고 소수점 한 자리로 반환한다.
 - `feedback_status`는 `not_requested`, `pending`, `completed`, `failed` 중 하나이다.
 - AI 피드백을 아직 생성하지 않았거나 생성에 실패한 경우 `feedback`은 `null`이다.
@@ -700,6 +707,7 @@ AI 입력 범위:
 
 ## 프론트엔드 연동 참고
 
+- 현재 프론트엔드는 구현 완료된 인증, 문장, 분석, 기록, 통계 API까지 연결한다. AI 교정 피드백 생성 API와 `feedback_status` polling은 백엔드 구현이 끝난 뒤 활성화한다.
 - 개발 중 API 문서는 `/api/docs/`, OpenAPI 스키마는 `/api/schema/`에서 확인한다.
 - 회원가입, 로그인, 토큰 갱신, 문장 목록 및 문장 상세를 제외한 API 요청에는 `Authorization: Bearer {access_token}`을 보낸다.
 - Access Token이 만료되어 `401 INVALID_TOKEN`을 받으면 Refresh Token으로 갱신을 한 번만 시도한다. 갱신도 실패하면 저장된 토큰을 제거하고 로그인 화면으로 이동한다.
@@ -711,7 +719,7 @@ AI 입력 범위:
 - `consent_to_store=false`인 결과는 완료 후 30분 동안만 조회할 수 있다. 해당 결과에는 만료 안내를 표시하고 기록 및 통계 화면에 노출하지 않는다.
 - 날짜는 UTC ISO 8601 형식으로 전달되므로 화면에서는 사용자 기기의 현지 시간으로 변환한다.
 - `next`와 `previous`는 Base URL 뒤에 붙여 호출할 수 있는 상대 경로로 전달한다.
-- 음성 업로드는 `multipart/form-data`로 보내며 필드 이름은 `sentence_id`, `audio`, `consent_to_store`를 사용한다. 파일명만 바꾸지 말고 실제 녹음 형식을 `wav`, `m4a`, `aac` 중 하나로 맞춘다.
+- 음성 업로드는 `multipart/form-data`로 보내며 필드 이름은 `sentence_id`, `audio`, `consent_to_store`를 사용한다. 파일명만 바꾸지 말고 실제 녹음 형식을 `wav`, `m4a`, `aac`, `webm` 중 하나로 맞춘다.
 - 에러 메시지만 비교하지 말고 공통 에러 응답의 `error.code`를 기준으로 화면 동작을 분기한다.
 
 ## 백엔드 구현 상태

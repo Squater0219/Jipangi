@@ -1,4 +1,5 @@
 import hashlib
+import subprocess
 import wave
 from pathlib import Path
 from uuid import uuid4
@@ -12,13 +13,15 @@ from config.exceptions import APIError
 
 MAX_AUDIO_SIZE = 20 * 1024 * 1024
 MAX_AUDIO_DURATION = 30
-ALLOWED_EXTENSIONS = {"wav", "m4a", "aac"}
+ALLOWED_EXTENSIONS = {"wav", "m4a", "aac", "webm"}
 ALLOWED_MIME_TYPES = {
     "audio/aac",
     "audio/mp4",
     "audio/wav",
+    "audio/webm",
     "audio/x-wav",
     "video/mp4",
+    "video/webm",
 }
 
 
@@ -80,6 +83,25 @@ def _audio_duration(path, extension):
     if extension == "wav":
         with wave.open(path, "rb") as audio:
             return audio.getnframes() / audio.getframerate()
+
+    if extension == "webm":
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return float(result.stdout.strip())
 
     audio = MutagenFile(path)
     if audio is None or audio.info is None:

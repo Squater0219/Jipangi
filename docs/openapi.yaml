@@ -558,7 +558,7 @@ components:
       properties:
         sequence:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
           title: 오류 순서
@@ -568,14 +568,14 @@ components:
           maxLength: 100
         word_index:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
           nullable: true
           title: 문장 내 단어 위치
         phone_position:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
           title: 목표 IPA 위치
@@ -595,6 +595,9 @@ components:
           type: number
           format: double
           nullable: true
+        specific_feedback:
+          title: 오류별 교정 피드백
+          description: Qwen이 생성한 summary, content, practice_tip 구조
       required:
       - confidence
       - operation

@@ -1,11 +1,16 @@
 import io
 import wave
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from pronunciation.models import PracticeSentence, PronunciationAnalysis, PronunciationCategory
+from pronunciation.services.audio import validate_audio
 
 
 def wav_file():
@@ -136,3 +141,20 @@ class AnalysisAPITests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data["error"]["code"], "INVALID_AUDIO_FORMAT")
+
+    @patch("pronunciation.services.audio._audio_duration", return_value=1.0)
+    @patch(
+        "pronunciation.services.audio.filetype.guess",
+        return_value=SimpleNamespace(mime="video/webm"),
+    )
+    def test_expo_webm_audio_is_accepted(self, _guess, _duration):
+        uploaded = SimpleUploadedFile(
+            "voice.webm",
+            b"\x1aE\xdf\xa3" + b"webm-test-data",
+            content_type="video/webm",
+        )
+
+        path = validate_audio(uploaded)
+
+        self.assertTrue(path.endswith(".webm"))
+        Path(path).unlink(missing_ok=True)

@@ -91,6 +91,7 @@ class PronunciationErrorSerializer(serializers.ModelSerializer):
             "recognized_phone",
             "operation",
             "confidence",
+            "specific_feedback",
         )
 
     @extend_schema_field(serializers.CharField(allow_null=True))

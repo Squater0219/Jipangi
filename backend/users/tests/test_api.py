@@ -100,3 +100,15 @@ class AuthenticationAPITests(APITestCase):
 
         self.assertEqual(limited.status_code, 429)
         self.assertEqual(limited.data["error"]["code"], "TOO_MANY_REQUESTS")
+
+    def test_expo_web_origin_is_allowed_by_cors(self):
+        response = self.client.get(
+            "/api/v1/sentences",
+            HTTP_ORIGIN="http://localhost:8081",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response["Access-Control-Allow-Origin"],
+            "http://localhost:8081",
+        )

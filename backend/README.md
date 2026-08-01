@@ -29,6 +29,9 @@ erDiagram
 - Celery와 Redis 비동기 작업
 - drf-spectacular OpenAPI 및 Swagger UI
 - 허용 Origin 기반 CORS
+- Expo 웹의 `webm` 녹음 길이 검증을 위한 `ffprobe`(FFmpeg)
+
+macOS에서는 `brew install ffmpeg`로 `ffprobe`를 설치할 수 있습니다.
 
 개발 서버 실행 후 Swagger UI는 `/api/docs/`, OpenAPI 스키마는 `/api/schema/`에서 확인할 수 있습니다.
 

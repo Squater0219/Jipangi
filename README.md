@@ -40,8 +40,17 @@ API 문서는 서버 실행 후 `http://127.0.0.1:8000/api/docs/`에서 확인�
 
 ## 프론트엔드
 
-프론트엔드 프레임워크가 확정되면 `frontend/`에 프로젝트를 생성합니다.
-API 기본 주소는 `frontend/.env.example`을 참고합니다.
+Expo와 React Native로 구현되어 있습니다. Node.js 20 이상을 사용합니다.
+
+```bash
+cd frontend
+nvm use
+npm ci
+npm run web
+```
+
+API 기본 주소와 플랫폼별 설정은 [frontend/README.md](frontend/README.md)를
+참고합니다.
 
 ## 전체 API 테스트
 
