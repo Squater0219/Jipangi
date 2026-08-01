@@ -69,6 +69,11 @@ class PronunciationModelTests(TestCase):
             recognized_phone="p",
             operation=PronunciationError.Operation.SUBSTITUTION,
             confidence=Decimal("0.8700"),
+            specific_feedback={
+                "summary": "ㅁ 발음이 다르게 인식되었습니다.",
+                "content": "두 입술을 붙인 뒤 코로 소리를 내보세요.",
+                "practice_tip": "마, 머, 모를 천천히 반복하세요.",
+            },
         )
         feedback = CorrectionFeedback.objects.create(
             analysis=analysis,
@@ -78,6 +83,7 @@ class PronunciationModelTests(TestCase):
         )
 
         self.assertEqual(analysis.errors.get(), error)
+        self.assertEqual(error.specific_feedback["practice_tip"], "마, 머, 모를 천천히 반복하세요.")
         self.assertEqual(analysis.feedback, feedback)
         self.assertEqual(self.sentence.analyses.count(), 1)
 

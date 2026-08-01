@@ -1,3 +1,4 @@
+import hashlib
 import wave
 from pathlib import Path
 from uuid import uuid4
@@ -19,6 +20,18 @@ ALLOWED_MIME_TYPES = {
     "audio/x-wav",
     "video/mp4",
 }
+
+
+def calculate_request_fingerprint(*, user_id, sentence_id, audio_path):
+    digest = hashlib.sha256()
+    digest.update(str(user_id).encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(str(sentence_id).encode("utf-8"))
+    digest.update(b"\0")
+    with Path(audio_path).open("rb") as audio:
+        for chunk in iter(lambda: audio.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def validate_audio(uploaded_file):

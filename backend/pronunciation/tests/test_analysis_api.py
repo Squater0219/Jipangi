@@ -74,6 +74,27 @@ class AnalysisAPITests(APITestCase):
         analysis = PronunciationAnalysis.objects.get(id=analysis_id)
         self.assertIsNotNone(analysis.expires_at)
         self.assertEqual(analysis.analyzer_metadata["backend"], "development-stub")
+        self.assertEqual(len(analysis.request_fingerprint), 64)
+
+    def test_identical_request_content_has_same_fingerprint(self):
+        self.authenticate()
+
+        first = self.create_analysis(consent=True)
+        second = self.create_analysis(consent=True)
+
+        first_analysis = PronunciationAnalysis.objects.get(id=first.data["analysis_id"])
+        second_analysis = PronunciationAnalysis.objects.get(id=second.data["analysis_id"])
+        self.assertEqual(first_analysis.request_fingerprint, second_analysis.request_fingerprint)
+
+        self.authenticate(self.other_user)
+        other_user_result = self.create_analysis(consent=True)
+        other_user_analysis = PronunciationAnalysis.objects.get(
+            id=other_user_result.data["analysis_id"]
+        )
+        self.assertNotEqual(
+            first_analysis.request_fingerprint,
+            other_user_analysis.request_fingerprint,
+        )
 
     def test_analysis_is_private_and_can_be_deleted(self):
         self.authenticate()

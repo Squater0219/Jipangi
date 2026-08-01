@@ -60,6 +60,7 @@ erDiagram
         decimal score "decimal(4,1), nullable"
         string status "varchar(20)"
         boolean consent_to_store
+        string request_fingerprint "varchar(64), indexed SHA-256"
         datetime expires_at "nullable"
         int processing_ms "unsigned, nullable"
         json analyzer_metadata
@@ -79,6 +80,7 @@ erDiagram
         string recognized_phone "varchar(20)"
         string operation "varchar(20)"
         decimal confidence "decimal(5,4), nullable"
+        json specific_feedback "Qwen summary, content, practice_tip"
         datetime created_at
     }
 
@@ -115,8 +117,14 @@ erDiagram
 - `pronunciation_analysis.status`는 `pending`, `processing`, `completed`,
   `failed`만 허용한다.
 - `pronunciation_analysis.score`는 `NULL` 또는 `0.0` 이상 `100.0` 이하이다.
+- `pronunciation_analysis.request_fingerprint`는
+  `UTF-8(user_id) + 0x00 + UTF-8(sentence_id) + 0x00 + 음성 바이트` 순서로
+  결합해 계산한 64자리 SHA-256 값이다. 기존 데이터는 빈 문자열이며 이후
+  생성되는 분석부터 값이 저장된다.
 - `pronunciation_error`의 `(analysis_id, sequence)` 조합은 고유값이다.
 - `pronunciation_error.confidence`는 `NULL` 또는 `0.0` 이상 `1.0` 이하이다.
+- `pronunciation_error.specific_feedback`에는 오류별 Qwen 응답의 `summary`,
+  `content`, `practice_tip`을 JSON 객체로 저장하며 생성 전 기본값은 `{}`이다.
 - 분석이 삭제되면 연결된 발음 오류와 교정 피드백도 함께 삭제된다.
 - 사용 중인 연습 문장은 연결된 분석이 남아 있는 동안 삭제할 수 없다.
 
@@ -124,7 +132,8 @@ erDiagram
 
 - `practice_sentence`: `(is_active, difficulty)`, `(category_id, is_active)`
 - `pronunciation_analysis`: `(user_id, created_at)`,
-  `(sentence_id, created_at)`, `(status, created_at)`, `expires_at`
+  `(sentence_id, created_at)`, `(status, created_at)`, `expires_at`,
+  `request_fingerprint`
 - `pronunciation_error`: `(analysis_id, operation)`,
   `(target_phone, recognized_phone)`
 

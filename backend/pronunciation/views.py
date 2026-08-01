@@ -28,7 +28,7 @@ from .serializers import (
     SentenceListSerializer,
     StatisticsSummarySerializer,
 )
-from .services.audio import validate_audio
+from .services.audio import calculate_request_fingerprint, validate_audio
 from .tasks import process_analysis
 
 
@@ -164,12 +164,18 @@ class AnalysisCreateView(APIView):
             )
 
         audio_path = validate_audio(serializer.validated_data["audio"])
+        request_fingerprint = calculate_request_fingerprint(
+            user_id=request.user.id,
+            sentence_id=sentence.id,
+            audio_path=audio_path,
+        )
         analysis = PronunciationAnalysis.objects.create(
             user=request.user,
             sentence=sentence,
             target_ipa=sentence.cached_ipa,
             status=PronunciationAnalysis.Status.PENDING,
             consent_to_store=serializer.validated_data["consent_to_store"],
+            request_fingerprint=request_fingerprint,
         )
         try:
             process_analysis.delay(str(analysis.id), audio_path)

@@ -127,6 +127,14 @@ class PronunciationAnalysis(models.Model):
         verbose_name="기록 저장 동의",
         help_text="미동의 분석 결과는 완료 후 30분 동안만 임시 보관합니다.",
     )
+    request_fingerprint = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="중복 요청 식별값",
+        help_text="사용자 ID, 문장 ID와 음성 바이트로 계산한 SHA-256 값",
+    )
     expires_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -203,6 +211,12 @@ class PronunciationError(models.Model):
         blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(1)],
         verbose_name="인식 신뢰도",
+    )
+    specific_feedback = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="오류별 교정 피드백",
+        help_text="Qwen이 생성한 summary, content, practice_tip 구조",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
