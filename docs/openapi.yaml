@@ -1,0 +1,812 @@
+openapi: 3.0.3
+info:
+  title: 발음 교정 서비스 API
+  version: 2.0.0
+  description: 청각장애인을 위한 IPA 기반 발음 교정 서비스 API
+paths:
+  /api/v1/analyses:
+    post:
+      operationId: v1_analyses_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AnalysisCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AnalysisCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisAccepted'
+          description: ''
+  /api/v1/analyses/{analysis_id}:
+    get:
+      operationId: v1_analyses_retrieve
+      parameters:
+      - in: path
+        name: analysis_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResult'
+          description: ''
+    delete:
+      operationId: v1_analyses_destroy
+      parameters:
+      - in: path
+        name: analysis_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/analyses/{analysis_id}/status:
+    get:
+      operationId: v1_analyses_status_retrieve
+      parameters:
+      - in: path
+        name: analysis_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisStatus'
+          description: ''
+  /api/v1/auth/login:
+    post:
+      operationId: v1_auth_login_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          description: ''
+  /api/v1/auth/logout:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Logout'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Logout'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Logout'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/signup:
+    post:
+      operationId: v1_auth_signup_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Signup'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Signup'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Signup'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          description: ''
+  /api/v1/auth/token/refresh:
+    post:
+      operationId: v1_auth_token_refresh_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Refresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Refresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Refresh'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+          description: ''
+  /api/v1/records:
+    get:
+      operationId: v1_records_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: 페이지네이션된 결과 집합 내의 페이지 번호.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: 페이지당 반환할 결과 수.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRecordList'
+          description: ''
+  /api/v1/sentences:
+    get:
+      operationId: v1_sentences_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: 페이지네이션된 결과 집합 내의 페이지 번호.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: 페이지당 반환할 결과 수.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSentenceListList'
+          description: ''
+  /api/v1/sentences/{sentence_id}:
+    get:
+      operationId: v1_sentences_retrieve
+      parameters:
+      - in: path
+        name: sentence_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SentenceDetail'
+          description: ''
+  /api/v1/sentences/recommendation:
+    get:
+      operationId: v1_sentences_recommendation_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+          description: ''
+  /api/v1/statistics/summary:
+    get:
+      operationId: v1_statistics_summary_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsSummary'
+          description: ''
+  /api/v1/users/me:
+    get:
+      operationId: v1_users_me_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+          description: ''
+components:
+  schemas:
+    AnalysisAccepted:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/AnalysisAcceptedStatusEnum'
+      required:
+      - analysis_id
+      - status
+    AnalysisAcceptedStatusEnum:
+      enum:
+      - pending
+      type: string
+      description: '* `pending` - pending'
+    AnalysisCreate:
+      type: object
+      properties:
+        sentence_id:
+          type: integer
+          minimum: 1
+        audio:
+          type: string
+          format: uri
+        consent_to_store:
+          type: boolean
+          default: false
+      required:
+      - audio
+      - sentence_id
+    AnalysisResult:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        sentence:
+          allOf:
+          - $ref: '#/components/schemas/SentenceReference'
+          readOnly: true
+        target_ipa:
+          title: 목표 IPA
+        recognized_ipa:
+          title: 사용자 IPA
+        score:
+          type: number
+          format: double
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/PronunciationError'
+        feedback:
+          allOf:
+          - $ref: '#/components/schemas/CorrectionFeedback'
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - analysis_id
+      - created_at
+      - errors
+      - feedback
+      - score
+      - sentence
+    AnalysisStatus:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/AnalysisStatusStatusEnum'
+      required:
+      - analysis_id
+      - status
+    AnalysisStatusStatusEnum:
+      enum:
+      - pending
+      - processing
+      - completed
+      - failed
+      type: string
+      description: |-
+        * `pending` - pending
+        * `processing` - processing
+        * `completed` - completed
+        * `failed` - failed
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - access_token
+      - refresh_token
+      - user
+    Category:
+      type: object
+      properties:
+        code:
+          type: string
+          title: 분류 코드
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          title: 분류명
+          maxLength: 100
+      required:
+      - code
+      - name
+    CorrectionFeedback:
+      type: object
+      properties:
+        summary:
+          type: string
+          title: 피드백 요약
+          maxLength: 500
+        content:
+          type: string
+          title: 교정 피드백
+        priority_items:
+          title: 교정 우선순위
+      required:
+      - content
+      - summary
+    ErrorSummary:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/Category'
+        count:
+          type: integer
+      required:
+      - category
+      - count
+    Login:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+    Logout:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
+    MeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          title: 사용자 이름
+          maxLength: 30
+        email:
+          type: string
+          format: email
+          title: 이메일
+          maxLength: 254
+        joined_at:
+          type: string
+          format: date-time
+        total_completed_analyses:
+          type: integer
+      required:
+      - email
+      - id
+      - joined_at
+      - total_completed_analyses
+      - username
+    OperationEnum:
+      enum:
+      - substitution
+      - deletion
+      - insertion
+      - weakening
+      type: string
+      description: |-
+        * `substitution` - 대체
+        * `deletion` - 삭제
+        * `insertion` - 삽입
+        * `weakening` - 약화
+    PaginatedRecordList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Record'
+    PaginatedSentenceListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SentenceList'
+    PronunciationError:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: 오류 순서
+        word:
+          type: string
+          title: 오류 단어
+          maxLength: 100
+        word_index:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          title: 문장 내 단어 위치
+        phone_position:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: 목표 IPA 위치
+        target_phone:
+          type: string
+          nullable: true
+          readOnly: true
+        recognized_phone:
+          type: string
+          nullable: true
+          readOnly: true
+        operation:
+          allOf:
+          - $ref: '#/components/schemas/OperationEnum'
+          title: 오류 유형
+        confidence:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - confidence
+      - operation
+      - phone_position
+      - recognized_phone
+      - sequence
+      - target_phone
+    RecentScore:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - analysis_id
+      - created_at
+      - score
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        text:
+          type: string
+          title: 연습 문장
+          maxLength: 255
+        difficulty:
+          type: string
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/Category'
+        reason:
+          type: string
+      required:
+      - category
+      - difficulty
+      - id
+      - reason
+      - text
+    Record:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        sentence:
+          type: string
+        score:
+          type: number
+          format: double
+        difficulty:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          nullable: true
+          readOnly: true
+        error_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - analysis_id
+      - category
+      - created_at
+      - difficulty
+      - error_count
+      - score
+      - sentence
+    Refresh:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
+    RefreshResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+      required:
+      - access_token
+      - refresh_token
+    SentenceDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        text:
+          type: string
+          title: 연습 문장
+          maxLength: 255
+        difficulty:
+          type: string
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/Category'
+        target_ipa: {}
+      required:
+      - category
+      - difficulty
+      - id
+      - target_ipa
+      - text
+    SentenceList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        text:
+          type: string
+          title: 연습 문장
+          maxLength: 255
+        difficulty:
+          type: string
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/Category'
+      required:
+      - category
+      - difficulty
+      - id
+      - text
+    SentenceReference:
+      type: object
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+      required:
+      - id
+      - text
+    Signup:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 30
+          minLength: 2
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - email
+      - password
+      - username
+    StatisticsSummary:
+      type: object
+      properties:
+        total_analyses:
+          type: integer
+        average_score:
+          type: number
+          format: double
+        best_score:
+          type: number
+          format: double
+        recent_scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentScore'
+        error_summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorSummary'
+      required:
+      - average_score
+      - best_score
+      - error_summary
+      - recent_scores
+      - total_analyses
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          title: 사용자 이름
+          maxLength: 30
+        email:
+          type: string
+          format: email
+          title: 이메일
+          maxLength: 254
+      required:
+      - email
+      - id
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

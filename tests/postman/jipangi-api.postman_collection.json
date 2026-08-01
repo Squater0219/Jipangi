@@ -1,0 +1,389 @@
+{
+  "info": {
+    "_postman_id": "b0931ff3-e030-4096-94a7-402299e1800e",
+    "name": "Jipangi API Integration Tests",
+    "description": "발음 교정 서비스 API v2 로컬 통합 테스트",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('test_email')) {",
+          "  const uuid = pm.variables.replaceIn('{{$randomUUID}}');",
+          "  pm.collectionVariables.set('test_email', `postman-${uuid}@example.com`);",
+          "  pm.collectionVariables.set('test_password', 'postman-safe-password-1234');",
+          "  pm.collectionVariables.set('test_username', 'Postman테스트');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {"key": "access_token", "value": ""},
+    {"key": "refresh_token", "value": ""},
+    {"key": "sentence_id", "value": "1001"},
+    {"key": "analysis_id", "value": ""},
+    {"key": "poll_count", "value": "0"}
+  ],
+  "item": [
+    {
+      "name": "01 회원가입",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('JWT와 사용자 정보 반환', () => {",
+              "  pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.refresh_token).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.user.email).to.eql(pm.collectionVariables.get('test_email'));",
+              "});",
+              "pm.collectionVariables.set('access_token', body.access_token);",
+              "pm.collectionVariables.set('refresh_token', body.refresh_token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {"type": "noauth"},
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+        },
+        "url": "{{base_url}}/auth/signup"
+      }
+    },
+    {
+      "name": "02 로그인",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('로그인 JWT 반환', () => {",
+              "  pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.refresh_token).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.collectionVariables.set('access_token', body.access_token);",
+              "pm.collectionVariables.set('refresh_token', body.refresh_token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {"type": "noauth"},
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+        },
+        "url": "{{base_url}}/auth/login"
+      }
+    },
+    {
+      "name": "03 내 정보 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('로그인 사용자 이메일 일치', () => pm.expect(body.email).to.eql(pm.collectionVariables.get('test_email')));"
+            ]
+          }
+        }
+      ],
+      "request": {"method": "GET", "url": "{{base_url}}/users/me"}
+    },
+    {
+      "name": "04 문장 목록 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('문장 목록 존재', () => pm.expect(body.results.length).to.be.above(0));",
+              "pm.collectionVariables.set('sentence_id', String(body.results[0].id));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {"type": "noauth"},
+        "method": "GET",
+        "url": "{{base_url}}/sentences?difficulty=easy&page=1&page_size=20"
+      }
+    },
+    {
+      "name": "05 문장 상세 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('IPA 배열 반환', () => pm.expect(body.target_ipa).to.be.an('array').and.not.empty);"
+            ]
+          }
+        }
+      ],
+      "request": {"auth": {"type": "noauth"}, "method": "GET", "url": "{{base_url}}/sentences/{{sentence_id}}"}
+    },
+    {
+      "name": "06 추천 문장 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('추천 이유 반환', () => pm.expect(pm.response.json().reason).to.be.a('string').and.not.empty);"
+            ]
+          }
+        }
+      ],
+      "request": {"method": "GET", "url": "{{base_url}}/sentences/recommendation"}
+    },
+    {
+      "name": "07 JWT 갱신",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('새 JWT 반환', () => {",
+              "  pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.refresh_token).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.collectionVariables.set('access_token', body.access_token);",
+              "pm.collectionVariables.set('refresh_token', body.refresh_token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {"type": "noauth"},
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"},
+        "url": "{{base_url}}/auth/token/refresh"
+      }
+    },
+    {
+      "name": "08 발음 분석 요청",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('202 Accepted', () => pm.response.to.have.status(202));",
+              "const body = pm.response.json();",
+              "pm.test('UUID 분석 ID 반환', () => pm.expect(body.analysis_id).to.match(/^[0-9a-f-]{36}$/));",
+              "pm.collectionVariables.set('analysis_id', body.analysis_id);",
+              "pm.collectionVariables.set('poll_count', '0');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {"key": "sentence_id", "value": "{{sentence_id}}", "type": "text"},
+            {"key": "audio", "type": "file", "src": "tests/postman/sample.wav"},
+            {"key": "consent_to_store", "value": "true", "type": "text"}
+          ]
+        },
+        "url": "{{base_url}}/analyses"
+      }
+    },
+    {
+      "name": "09 분석 상태 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('유효한 분석 상태', () => pm.expect(['pending', 'processing', 'completed', 'failed']).to.include(body.status));",
+              "if (body.status === 'pending' || body.status === 'processing') {",
+              "  const count = Number(pm.collectionVariables.get('poll_count') || 0) + 1;",
+              "  pm.collectionVariables.set('poll_count', String(count));",
+              "  pm.test('10회 안에 분석 완료', () => pm.expect(count).to.be.below(10));",
+              "  if (count < 10) pm.execution.setNextRequest('09 분석 상태 조회');",
+              "} else {",
+              "  pm.test('분석 성공', () => pm.expect(body.status).to.eql('completed'));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {"method": "GET", "url": "{{base_url}}/analyses/{{analysis_id}}/status"}
+    },
+    {
+      "name": "10 분석 결과 조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('개발 분석 결과 구조', () => {",
+              "  pm.expect(body.score).to.eql(100);",
+              "  pm.expect(body.recognized_ipa).to.be.an('array');",
+              "  pm.expect(body.errors).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {"method": "GET", "url": "{{base_url}}/analyses/{{analysis_id}}"}
+    },
+    {
+      "name": "11 학습 기록 목록",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('저장 동의 분석 포함', () => pm.expect(body.results.some(item => item.analysis_id === pm.collectionVariables.get('analysis_id'))).to.be.true);"
+            ]
+          }
+        }
+      ],
+      "request": {"method": "GET", "url": "{{base_url}}/records?page=1&page_size=20"}
+    },
+    {
+      "name": "12 통계 요약",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('분석 통계 반영', () => {",
+              "  pm.expect(body.total_analyses).to.be.at.least(1);",
+              "  pm.expect(body.average_score).to.be.a('number');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {"method": "GET", "url": "{{base_url}}/statistics/summary"}
+    },
+    {
+      "name": "13 분석 결과 삭제",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+          }
+        }
+      ],
+      "request": {"method": "DELETE", "url": "{{base_url}}/analyses/{{analysis_id}}"}
+    },
+    {
+      "name": "14 삭제 결과 재조회",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('404 Not Found', () => pm.response.to.have.status(404));",
+              "pm.test('ANALYSIS_NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('ANALYSIS_NOT_FOUND'));"
+            ]
+          }
+        }
+      ],
+      "request": {"method": "GET", "url": "{{base_url}}/analyses/{{analysis_id}}"}
+    },
+    {
+      "name": "15 로그아웃",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"},
+        "url": "{{base_url}}/auth/logout"
+      }
+    },
+    {
+      "name": "16 로그아웃 토큰 갱신 거부",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));",
+              "pm.test('INVALID_TOKEN', () => pm.expect(pm.response.json().error.code).to.eql('INVALID_TOKEN'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {"type": "noauth"},
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"},
+        "url": "{{base_url}}/auth/token/refresh"
+      }
+    }
+  ]
+}

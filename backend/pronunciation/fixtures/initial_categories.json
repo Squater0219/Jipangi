@@ -1,0 +1,68 @@
+[
+  {
+    "model": "pronunciation.pronunciationcategory",
+    "pk": 1,
+    "fields": {
+      "code": "batchim",
+      "name": "받침",
+      "description": "종성 7종성 및 받침 발음 연습",
+      "created_at": "2026-07-16T00:00:00Z",
+      "updated_at": "2026-07-16T00:00:00Z"
+    }
+  },
+  {
+    "model": "pronunciation.pronunciationcategory",
+    "pk": 2,
+    "fields": {
+      "code": "liaison",
+      "name": "연음",
+      "description": "받침이 뒤 음절의 초성으로 이어지는 발음 연습",
+      "created_at": "2026-07-16T00:00:00Z",
+      "updated_at": "2026-07-16T00:00:00Z"
+    }
+  },
+  {
+    "model": "pronunciation.pronunciationcategory",
+    "pk": 3,
+    "fields": {
+      "code": "nasalization",
+      "name": "비음화",
+      "description": "비음의 영향을 받는 발음 변화 연습",
+      "created_at": "2026-07-16T00:00:00Z",
+      "updated_at": "2026-07-16T00:00:00Z"
+    }
+  },
+  {
+    "model": "pronunciation.pronunciationcategory",
+    "pk": 4,
+    "fields": {
+      "code": "liquidization",
+      "name": "유음화",
+      "description": "ㄴ과 ㄹ이 만날 때의 발음 변화 연습",
+      "created_at": "2026-07-16T00:00:00Z",
+      "updated_at": "2026-07-16T00:00:00Z"
+    }
+  },
+  {
+    "model": "pronunciation.pronunciationcategory",
+    "pk": 5,
+    "fields": {
+      "code": "tensification",
+      "name": "경음화",
+      "description": "평음이 된소리로 바뀌는 발음 연습",
+      "created_at": "2026-07-16T00:00:00Z",
+      "updated_at": "2026-07-16T00:00:00Z"
+    }
+  },
+  {
+    "model": "pronunciation.pronunciationcategory",
+    "pk": 6,
+    "fields": {
+      "code": "palatalization",
+      "name": "구개음화",
+      "description": "ㄷ·ㅌ이 ㅣ 계열 모음 앞에서 변하는 발음 연습",
+      "created_at": "2026-07-16T00:00:00Z",
+      "updated_at": "2026-07-16T00:00:00Z"
+    }
+  }
+]
